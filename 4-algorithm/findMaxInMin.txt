@@ -1,0 +1,29 @@
+FUNCTION findMaxInMin(arr, k)
+    // Validasi input dasar
+    IF length of arr < k OR k <= 0 THEN
+        RETURN NULL
+    END IF
+
+    // Inisialisasi variabel untuk menyimpan nilai terbesar dari nilai-nilai minimum
+    SET max_of_mins TO -INFINITY
+
+    // Loop untuk menggeser window dari indeks awal 0 hingga (panjang arr - k)
+    FOR i FROM 0 TO (length of arr - k) DO
+        // Ambil elemen pertama di dalam window sebagai minimum awal
+        SET current_min TO arr[i]
+
+        // Periksa setiap elemen di dalam window berukuran k
+        FOR j FROM 1 TO (k - 1) DO
+            IF arr[i + j] < current_min THEN
+                SET current_min TO arr[i + j]
+            END IF
+        END FOR
+
+        // Bandingkan minimum window saat ini dengan nilai maksimum keseluruhan
+        IF current_min > max_of_mins THEN
+            SET max_of_mins TO current_min
+        END IF
+    END FOR
+
+    RETURN max_of_mins
+END FUNCTION
