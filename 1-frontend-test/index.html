@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chessboard - Knight Move Simulator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: #1e1e24;
+      color: #fff;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      font-size: 24px;
+    }
+
+    p {
+      margin-bottom: 20px;
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    .board-container {
+      border: 4px solid #333;
+      border-radius: 4px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 60px);
+      grid-template-rows: repeat(8, 60px);
+    }
+
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      font-size: 28px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s ease;
+    }
+
+    /* Warna pola kotak catur standar */
+    .cell.white {
+      background-color: #eeeed2;
+      color: #333;
+    }
+
+    .cell.black {
+      background-color: #769656;
+      color: #fff;
+    }
+
+    /* Kotak yang dipilih sebagai posisi kuda */
+    .cell.selected {
+      background-color: #3b82f6 !important;
+      color: #ffffff !important;
+    }
+
+    /* Kotak tujuan yang valid */
+    .cell.highlight {
+      background-color: #facc15 !important;
+      position: relative;
+    }
+
+    .cell.highlight::after {
+      content: "";
+      width: 14px;
+      height: 14px;
+      background-color: rgba(0, 0, 0, 0.4);
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Knight Move Simulator</h1>
+  <p>Klik salah satu kotak untuk menempatkan bidak kuda dan melihat kemungkinan langkahnya.</p>
+
+  <div class="board-container">
+    <div id="chessboard" class="board"></div>
+  </div>
+
+  <script>
+    const boardElement = document.getElementById("chessboard");
+    const BOARD_SIZE = 8;
+    let selectedCell = null;
+
+    // 8 kemungkinan pergeseran langkah kuda (delta row, delta col)
+    const knightOffsets = [
+      [-2, -1], [-2, 1],
+      [-1, -2], [-1, 2],
+      [1, -2],  [1, 2],
+      [2, -1],  [2, 1]
+    ];
+
+    // Menghitung langkah valid berdasarkan koordinat baris dan kolom
+    function getValidMoves(row, col) {
+      const validMoves = [];
+
+      for (const [dRow, dCol] of knightOffsets) {
+        const nextRow = row + dRow;
+        const nextCol = col + dCol;
+
+        // Validasi batasan papan (0 sampai 7)
+        if (nextRow >= 0 && nextRow < BOARD_SIZE && nextCol >= 0 && nextCol < BOARD_SIZE) {
+          validMoves.push(`${nextRow}-${nextCol}`);
+        }
+      }
+
+      return validMoves;
+    }
+
+    // Merender papan catur 8x8
+    function createBoard() {
+      boardElement.innerHTML = "";
+
+      for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+          const cell = document.createElement("div");
+          cell.classList.add("cell");
+          
+          // Penentuan warna selang-seling papan catur
+          const isWhite = (r + c) % 2 === 0;
+          cell.classList.add(isWhite ? "white" : "black");
+          
+          cell.dataset.row = r;
+          cell.dataset.col = c;
+          cell.id = `cell-${r}-${c}`;
+
+          cell.addEventListener("click", () => handleCellClick(r, c));
+          boardElement.appendChild(cell);
+        }
+      }
+    }
+
+    // Event handler ketika kotak diklik
+    function handleCellClick(row, col) {
+      // 1. Reset status kotak sebelumnya
+      document.querySelectorAll(".cell").forEach(cell => {
+        cell.classList.remove("selected", "highlight");
+        cell.textContent = "";
+      });
+
+      // 2. Beri tanda pada kotak yang dipilih
+      const currentCell = document.getElementById(`cell-${row}-${col}`);
+      currentCell.classList.add("selected");
+      currentCell.textContent = "♞"; // Simbol bidak kuda
+
+      // 3. Highlight kemungkinan langkah yang valid
+      const moves = getValidMoves(row, col);
+      moves.forEach(posKey => {
+        const targetCell = document.getElementById(`cell-${posKey}`);
+        if (targetCell) {
+          targetCell.classList.add("highlight");
+        }
+      });
+    }
+
+    // Inisialisasi awal papan
+    createBoard();
+  </script>
+</body>
+</html>
