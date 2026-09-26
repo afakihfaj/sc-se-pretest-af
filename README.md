@@ -37,7 +37,7 @@ Perancangan skema database relasional untuk sistem perpustakaan yang mencakup DD
 * **Tech Stack:** PostgreSQL / MySQL
 
 #### Entity Relationship Diagram (ERD)
-![ERD Diagram](./3-database/database-test-erd.png)
+![ERD Diagram](./3-sql/database-test-erd.png)
 
 ---
 
