@@ -3,75 +3,72 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
 )
 
-type JobResult struct {
-	ID       int
-	Input    int
-	Output   int
-	WorkerID int
-	Duration time.Duration
-}
-
-func worker(id int, jobs <-chan int, results chan<- JobResult, wg *sync.WaitGroup) {
+// worker menerima potongan (chunk) slice dan menghitung sum bilangan genap saja
+func worker(id int, chunk []int, ch chan<- int64, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	for num := range jobs {
-		startTime := time.Now()
-
-		// Simulalasi proses komputasi/I/O (misal: angka kuadrat)
-		time.Sleep(100 * time.Millisecond)
-		processedValue := num * num
-
-		// Kirim Hasil ke channel result
-		results <- JobResult{
-			ID:       num,
-			Input:    num,
-			Output:   processedValue,
-			WorkerID: id,
-			Duration: time.Since(startTime),
+	var partialSum int64 = 0
+	for _, num := range chunk {
+		// Filter hanya bilangan genap
+		if num%2 == 0 {
+			partialSum += int64(num)
 		}
-
 	}
+
+	fmt.Printf("[Worker %d] Memproses %d angka, sum genap lokal: %d\n", id, len(chunk), partialSum)
+
+	// Kirim hasil perhitungan parsial ke channel
+	ch <- partialSum
 }
 
 func main() {
-	// 1. Data slice awal yang akan diproses
-	numbers := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	totalJobs := len(numbers)
-	numWorkers := 3 // Menggunakan 3 worker goroutine
+	// 1. Buat slice integer berukuran besar (misal: 1.000.000 angka dari 1 sampai 1.000.000)
+	const totalData = 1000000
+	numbers := make([]int, totalData)
+	for i := 0; i < totalData; i++ {
+		numbers[i] = i + 1
+	}
 
-	//2. Stup Channel (Buffered channel untuk mencegah blocking berlebih)
-	jobs := make(chan int, totalJobs)
-	results := make(chan JobResult, totalJobs)
+	// 2. Tentukan jumlah worker (misalnya 4 worker sesuai soal)
+	numWorkers := 4
+	chunkSize := (len(numbers) + numWorkers - 1) / numWorkers
 
-	// 3. Setup WaitGroup untuk memantau selesainya seluruh worker
+	// Channel untuk mengumpulkan hasil sum parsial dari tiap worker
+	sumChannel := make(chan int64, numWorkers)
 	var wg sync.WaitGroup
 
-	// Menjalankan worker goroutine
-	for w := 1; w <= numWorkers; w++ {
-		wg.Add(1)
-		go worker(w, jobs, results, &wg)
-	}
-	
-	// Mengirim data slice ke antrean channel jobs
-	for _, n := range numbers {
-		jobs <- n
-	}
-	close(jobs) // Tutup channel jobs setelah semua data masuk
+	// 3. Bagi slice ke worker dan jalankan secara konkuren
+	for i := 0; i < numWorkers; i++ {
+		start := i * chunkSize
+		end := start + chunkSize
+		if start >= len(numbers) {
+			break
+		}
+		if end > len(numbers) {
+			end = len(numbers)
+		}
 
-	// Goroutine terpisah untuk menunggu semua worker selesai, lalu menutup results channel.
+		chunk := numbers[start:end]
+
+		wg.Add(1)
+		go worker(i+1, chunk, sumChannel, &wg)
+	}
+
+	// 4. Goroutine terpisah untuk menutup channel setelah seluruh worker selesai
 	go func() {
 		wg.Wait()
-		close(results)
+		close(sumChannel)
 	}()
 
-	// 4. Membaca dan menampilkan hasil dari channel results
-	fmt.Println("=== HASIL PEMROSESAN GOROUTINE & WORKER POOL ===")
-	for res := range results {
-		fmt.Printf("Worker %d memproses input %d -> Hasil: %d (waktu: %v)\n",
-			res.WorkerID, res.Input, res.Output, res.Duration)
+	// 5. Kumpulkan total sum dari channel tanpa race condition
+	var totalSum int64 = 0
+	for partial := range sumChannel {
+		totalSum += partial
 	}
-	fmt.Println("Semua data berhasil diproses secara konkuren tanpa race condition")
+
+	fmt.Println("--------------------------------------------------")
+	fmt.Printf("Total Sum Bilangan Genap (1 s/d %d) = %d\n", totalData, totalSum)
+	fmt.Println("--------------------------------------------------")
 }
