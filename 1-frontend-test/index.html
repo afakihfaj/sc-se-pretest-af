@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chessboard - Knight Move Simulator</title>
+  <title>Knight Move Simulator - Solecode Test</title>
   <style>
     * {
       box-sizing: border-box;
@@ -16,166 +16,258 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      padding: 30px 20px;
       min-height: 100vh;
       background-color: #1e1e24;
       color: #fff;
     }
 
     h1 {
-      margin-bottom: 8px;
+      margin-bottom: 20px;
       font-size: 24px;
     }
 
-    p {
-      margin-bottom: 20px;
-      color: #aaa;
-      font-size: 14px;
+    /* Form Kontrol Baris & Kolom (Poin 12 & 13) */
+    .controls {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 24px;
+      background: #2b2b36;
+      padding: 14px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
-    .board-container {
-      border: 4px solid #333;
+    .form-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group label {
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .form-group input {
+      width: 70px;
+      padding: 6px 10px;
       border-radius: 4px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 1px solid #444;
+      background: #18181b;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+
+    button {
+      padding: 8px 16px;
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+    }
+
+    /* Komponen Board (Poin 2) */
+    .board-wrapper {
+      max-width: 90vw;
+      max-height: 75vh;
+      overflow: auto;
+      border: 4px solid #333;
+      border-radius: 6px;
+      background: #333;
     }
 
     .board {
       display: grid;
-      grid-template-columns: repeat(8, 60px);
-      grid-template-rows: repeat(8, 60px);
     }
 
-    .cell {
+    /* Komponen Kotak (Poin 2) */
+    .kotak {
+      width: 50px;
+      height: 50px;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 60px;
-      height: 60px;
-      font-size: 28px;
       cursor: pointer;
       user-select: none;
-      transition: background-color 0.2s ease;
+      transition: background-color 0.1s ease;
     }
 
-    /* Warna pola kotak catur standar */
-    .cell.white {
-      background-color: #eeeed2;
-      color: #333;
+    .kotak.white {
+      background-color: #f0d9b5;
     }
 
-    .cell.black {
-      background-color: #769656;
-      color: #fff;
+    .kotak.black {
+      background-color: #b58863;
     }
 
-    /* Kotak yang dipilih sebagai posisi kuda */
-    .cell.selected {
-      background-color: #3b82f6 !important;
-      color: #ffffff !important;
+    /* Simbol Kuda: Huruf K Merah Tebal (Poin 4) */
+    .kuda-piece {
+      color: #dc2626;
+      font-weight: 900;
+      font-size: 26px;
+      line-height: 1;
     }
 
-    /* Kotak tujuan yang valid */
-    .cell.highlight {
-      background-color: #facc15 !important;
-      position: relative;
+    /* Efek Hover (Poin 7, 8, 9) */
+    .kotak.hover-allowed {
+      background-color: #22c55e !important; /* Hijau */
     }
 
-    .cell.highlight::after {
-      content: "";
-      width: 14px;
-      height: 14px;
-      background-color: rgba(0, 0, 0, 0.4);
-      border-radius: 50%;
+    .kotak.hover-forbidden {
+      background-color: #ef4444 !important; /* Merah */
     }
   </style>
 </head>
 <body>
 
   <h1>Knight Move Simulator</h1>
-  <p>Klik salah satu kotak untuk menempatkan bidak kuda dan melihat kemungkinan langkahnya.</p>
 
-  <div class="board-container">
-    <div id="chessboard" class="board"></div>
+  <!-- Kontrol Input Baris & Kolom -->
+  <div class="controls">
+    <div class="form-group">
+      <label for="inputRow">Row:</label>
+      <input type="number" id="inputRow" value="8" min="1" max="100" />
+    </div>
+    <div class="form-group">
+      <label for="inputCol">Column:</label>
+      <input type="number" id="inputCol" value="8" min="1" max="100" />
+    </div>
+    <button id="btnGenerate">Generate Board</button>
+  </div>
+
+  <div class="board-wrapper">
+    <div id="board" class="board"></div>
   </div>
 
   <script>
-    const boardElement = document.getElementById("chessboard");
-    const BOARD_SIZE = 8;
-    let selectedCell = null;
+    // State aplikasi
+    let totalRows = 8;
+    let totalCols = 8;
+    let knightPos = { row: 0, col: 0 }; // Poin 5: Default pojok kiri atas (0, 0)
 
-    // 8 kemungkinan pergeseran langkah kuda (delta row, delta col)
-    const knightOffsets = [
-      [-2, -1], [-2, 1],
-      [-1, -2], [-1, 2],
-      [1, -2],  [1, 2],
-      [2, -1],  [2, 1]
+    // Poin 6: 8 gerakan sah bidak kuda
+    const knightMoves = [
+      { dRow: -1, dCol: 2 },  // a. kanan 2, atas 1
+      { dRow: 1,  dCol: 2 },  // b. kanan 2, bawah 1
+      { dRow: -1, dCol: -2 }, // c. kiri 2, atas 1
+      { dRow: 1,  dCol: -2 }, // d. kiri 2, bawah 1
+      { dRow: -2, dCol: 1 },  // e. kanan 1, atas 2
+      { dRow: 2,  dCol: 1 },  // f. kanan 1, bawah 2
+      { dRow: -2, dCol: -1 }, // g. kiri 1, atas 2
+      { dRow: 2,  dCol: -1 }  // h. kiri 1, bawah 2
     ];
 
-    // Menghitung langkah valid berdasarkan koordinat baris dan kolom
-    function getValidMoves(row, col) {
-      const validMoves = [];
+    const boardElement = document.getElementById("board");
+    const inputRow = document.getElementById("inputRow");
+    const inputCol = document.getElementById("inputCol");
+    const btnGenerate = document.getElementById("btnGenerate");
 
-      for (const [dRow, dCol] of knightOffsets) {
-        const nextRow = row + dRow;
-        const nextCol = col + dCol;
-
-        // Validasi batasan papan (0 sampai 7)
-        if (nextRow >= 0 && nextRow < BOARD_SIZE && nextCol >= 0 && nextCol < BOARD_SIZE) {
-          validMoves.push(`${nextRow}-${nextCol}`);
-        }
+    // Mengecek apakah suatu kotak merupakan langkah yang sah dari posisi kuda
+    function isAllowedMove(targetRow, targetCol) {
+      // Poin 9: Posisi kuda itu sendiri bukan langkah yang diperbolehkan
+      if (targetRow === knightPos.row && targetCol === knightPos.col) {
+        return false;
       }
 
-      return validMoves;
+      return knightMoves.some(m => {
+        return (knightPos.row + m.dRow === targetRow) && (knightPos.col + m.dCol === targetCol);
+      });
     }
 
-    // Merender papan catur 8x8
-    function createBoard() {
+    // Komponen Kotak (Poin 2)
+    function createKotakComponent(row, col) {
+      const kotak = document.createElement("div");
+      kotak.classList.add("kotak");
+      
+      const isWhite = (row + col) % 2 === 0;
+      kotak.classList.add(isWhite ? "white" : "black");
+      kotak.dataset.row = row;
+      kotak.dataset.col = col;
+
+      // Poin 4: Render huruf K merah tebal jika kotak ini posisi kuda saat ini
+      if (row === knightPos.row && col === knightPos.col) {
+        const kSpan = document.createElement("span");
+        kSpan.classList.add("kuda-piece");
+        kSpan.textContent = "K";
+        kotak.appendChild(kSpan);
+      }
+
+      // Poin 7, 8, 9: Penanganan Hover Warna
+      kotak.addEventListener("mouseenter", () => {
+        if (isAllowedMove(row, col)) {
+          kotak.classList.add("hover-allowed"); // Hijau
+        } else {
+          kotak.classList.add("hover-forbidden"); // Merah
+        }
+      });
+
+      kotak.addEventListener("mouseleave", () => {
+        kotak.classList.remove("hover-allowed", "hover-forbidden");
+      });
+
+      // Poin 10 & 11: Penanganan Klik Kotak
+      kotak.addEventListener("click", () => {
+        if (isAllowedMove(row, col)) {
+          // Poin 11: Pindah kuda ke posisi baru
+          knightPos = { row: row, col: col };
+          renderBoard();
+        }
+        // Poin 10: Klik di kotak yang tidak diperbolehkan tidak melakukan apa-apa
+      });
+
+      return kotak;
+    }
+
+    // Komponen Board (Poin 2)
+    function renderBoard() {
       boardElement.innerHTML = "";
+      boardElement.style.gridTemplateColumns = `repeat(${totalCols}, 50px)`;
+      boardElement.style.gridTemplateRows = `repeat(${totalRows}, 50px)`;
 
-      for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-          const cell = document.createElement("div");
-          cell.classList.add("cell");
-          
-          // Penentuan warna selang-seling papan catur
-          const isWhite = (r + c) % 2 === 0;
-          cell.classList.add(isWhite ? "white" : "black");
-          
-          cell.dataset.row = r;
-          cell.dataset.col = c;
-          cell.id = `cell-${r}-${c}`;
-
-          cell.addEventListener("click", () => handleCellClick(r, c));
-          boardElement.appendChild(cell);
+      for (let r = 0; r < totalRows; r++) {
+        for (let c = 0; c < totalCols; c++) {
+          const kotak = createKotakComponent(r, c);
+          boardElement.appendChild(kotak);
         }
       }
     }
 
-    // Event handler ketika kotak diklik
-    function handleCellClick(row, col) {
-      // 1. Reset status kotak sebelumnya
-      document.querySelectorAll(".cell").forEach(cell => {
-        cell.classList.remove("selected", "highlight");
-        cell.textContent = "";
-      });
+    // Poin 12 & 13: Generate Board berdasarkan input user
+    function handleGenerate() {
+      let r = parseInt(inputRow.value, 10);
+      let c = parseInt(inputCol.value, 10);
 
-      // 2. Beri tanda pada kotak yang dipilih
-      const currentCell = document.getElementById(`cell-${row}-${col}`);
-      currentCell.classList.add("selected");
-      currentCell.textContent = "♞"; // Simbol bidak kuda
+      // Batasan minimal 1 dan maksimal 100
+      if (isNaN(r) || r < 1) r = 1;
+      if (r > 100) r = 100;
+      if (isNaN(c) || c < 1) c = 1;
+      if (c > 100) c = 100;
 
-      // 3. Highlight kemungkinan langkah yang valid
-      const moves = getValidMoves(row, col);
-      moves.forEach(posKey => {
-        const targetCell = document.getElementById(`cell-${posKey}`);
-        if (targetCell) {
-          targetCell.classList.add("highlight");
-        }
-      });
+      inputRow.value = r;
+      inputCol.value = c;
+
+      totalRows = r;
+      totalCols = c;
+
+      // Poin 12: Reset posisi kuda ke pojok kiri atas
+      knightPos = { row: 0, col: 0 };
+      renderBoard();
     }
 
-    // Inisialisasi awal papan
-    createBoard();
+    btnGenerate.addEventListener("click", handleGenerate);
+
+    // Inisialisasi awal papan saat halaman dimuat
+    renderBoard();
   </script>
 </body>
 </html>
