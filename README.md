@@ -15,18 +15,22 @@ Repositori ini berisi penyelesaian tugas technical pre-test yang mencakup 4 bagi
 ### Part 1 - Frontend (Knight Move Chessboard)
 Simulasi papan catur interaktif berukuran 8x8 yang menghitung dan menandai kemungkinan langkah sah bidak kuda (*Knight*) berdasarkan koordinat petak yang diklik.
 
-* **Lokasi Folder:** `1-frontend/`
+* **Lokasi Folder:** `1-frontend-test/`
 * **Tech Stack:** HTML5, CSS Grid, Vanilla JavaScript
 * **Cara Menjalankan:** Buka file `1-frontend/index.html` langsung pada browser.
 
 ---
 
 ### Part 2 - Backend (Concurrency & Worker Pool)
-Pemrosesan data secara asinkron dan konkuren menggunakan pola Worker Pool, Goroutines, dan Buffered Channels di Golang dengan jaminan thread-safety via `sync.WaitGroup`.
+Pemrosesan data secara konkuren menggunakan pola Worker Pool, Goroutines, dan Channels di Golang dengan sinkronisasi alur via `sync.WaitGroup`.
 
-* **Lokasi Folder:** `2-backend/`
+* **Lokasi Folder:** `2-backend-test/`
 * **Tech Stack:** Go (Golang)
-* **Cara Menjalankan:** Masuk ke direktori folder lalu jalankan perintah `go run backend-test.go`.
+* ````markdown
+* **Cara Menjalankan:**
+```bash
+cd 2-backend-test
+go run backend-test.go
 
 ---
 
