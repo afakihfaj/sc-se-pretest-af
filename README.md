@@ -35,7 +35,7 @@ Perancangan skema database relasional untuk sistem perpustakaan yang mencakup DD
 
 * **Lokasi Folder:** `3-sql/`
 * **Tech Stack:** MySQL / MariaDB
-* **Cara Menjalankan:** Jalankan script `3-sql/database-test-query.sql` secara berurutan (DDL -> DML -> Query Soal) pada PostgreSQL/MySQL client (DBeaver, pgAdmin, atau CLI).
+* **Cara Menjalankan:** Jalankan script `3-sql/database-test-query.sql` ssecara berurutan (DDL -> DML -> Query Soal) pada MySQL/MariaDB client (DBeaver, phpMyAdmin, MySQL Workbench, atau CLI).
 
 #### Entity Relationship Diagram (ERD)
 ![ERD Diagram](./3-sql/database-test-erd.png)
