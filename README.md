@@ -33,8 +33,9 @@ Pemrosesan data secara asinkron dan konkuren menggunakan pola Worker Pool, Gorou
 ### Part 3 - Database (Library Management System)
 Perancangan skema database relasional untuk sistem perpustakaan yang mencakup DDL, DML, relasi data antar-entitas, serta kueri analitis.
 
-* **Lokasi Folder:** `3-database/`
-* **Tech Stack:** PostgreSQL / MySQL
+* **Lokasi Folder:** `3-sql/`
+* **Tech Stack:** MySQL / MariaDB
+* **Cara Menjalankan:** Jalankan script `3-sql/database-test-query.sql` secara berurutan (DDL -> DML -> Query Soal) pada PostgreSQL/MySQL client (DBeaver, pgAdmin, atau CLI).
 
 #### Entity Relationship Diagram (ERD)
 ![ERD Diagram](./3-sql/database-test-erd.png)
@@ -45,4 +46,4 @@ Perancangan skema database relasional untuk sistem perpustakaan yang mencakup DD
 Penyelesaian algoritma pencarian nilai maksimum dan minimum dalam array secara efisien menggunakan pendekatan traversal linear / windowing.
 
 * **Lokasi Folder:** `4-algorithm/`
-* **File:** Pseudocode implementasi algoritma.
+* **File:** `4-algorithm/findMaxInMin.txt`
