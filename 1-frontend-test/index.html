@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
+  <link rel="icon" href="data:," />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Knight Move Simulator - Solecode Test</title>
+  <title>Knight & King Move Simulator - Free Move</title>
   <style>
     * {
       box-sizing: border-box;
@@ -23,11 +25,48 @@
     }
 
     h1 {
-      margin-bottom: 20px;
+      margin-bottom: 12px;
       font-size: 24px;
     }
 
-    /* Form Kontrol Baris & Kolom (Poin 12 & 13) */
+    /* Status Bidak yang Dipilih */
+    .status-panel {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      padding: 8px 18px;
+      border-radius: 20px;
+      background: #2b2b36;
+      border: 1px solid #444;
+    }
+
+    .badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .badge-knight {
+      background-color: #dc2626;
+      color: #fff;
+    }
+
+    .badge-king {
+      background-color: #eab308;
+      color: #18181b;
+    }
+
+    .badge-none {
+      background-color: #64748b;
+      color: #fff;
+    }
+
+    /* Form Kontrol Baris & Kolom */
     .controls {
       display: flex;
       gap: 15px;
@@ -36,7 +75,7 @@
       background: #2b2b36;
       padding: 14px 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
     .form-group {
@@ -76,10 +115,10 @@
       background-color: #2563eb;
     }
 
-    /* Komponen Board (Poin 2) */
+    /* Komponen Board */
     .board-wrapper {
       max-width: 90vw;
-      max-height: 75vh;
+      max-height: 70vh;
       overflow: auto;
       border: 4px solid #333;
       border-radius: 6px;
@@ -90,7 +129,7 @@
       display: grid;
     }
 
-    /* Komponen Kotak (Poin 2) */
+    /* Komponen Kotak */
     .kotak {
       width: 50px;
       height: 50px;
@@ -100,25 +139,47 @@
       cursor: pointer;
       user-select: none;
       transition: background-color 0.1s ease;
+      position: relative;
     }
 
     .kotak.white {
-      background-color: #f0d9b5;
+      background-color: #FFFFFF;
     }
 
     .kotak.black {
-      background-color: #b58863;
+      background-color: #000000;
     }
 
-    /* Simbol Kuda: Huruf K Merah Tebal (Poin 4) */
-    .kuda-piece {
-      color: #dc2626;
+    /* Simbol Bidak */
+    .piece {
       font-weight: 900;
-      font-size: 26px;
+      font-size: 32px;
       line-height: 1;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: transform 0.1s, box-shadow 0.1s;
     }
 
-    /* Efek Hover (Poin 7, 8, 9) */
+    .piece.knight {
+      color: #dc2626; /* Merah */
+    }
+
+    .piece.king {
+      color: #eab308; /* Emas / Kuning */
+    }
+
+    /* Efek saat bidak sedang aktif dipilih */
+    .kotak.selected-piece .piece {
+      box-shadow: 0 0 0 3px #3b82f6;
+      background-color: rgba(59, 130, 246, 0.2);
+      transform: scale(1.08);
+    }
+
+    /* Efek Hover */
     .kotak.hover-allowed {
       background-color: #22c55e !important; /* Hijau */
     }
@@ -128,19 +189,27 @@
     }
   </style>
 </head>
+
 <body>
 
-  <h1>Knight Move Simulator</h1>
+  <h1>Knight & King Simulator</h1>
+
+  <!-- Indikator Bidak yang Sedang Dipilih -->
+  <div class="status-panel">
+    <span>Bidak Terpilih:</span>
+    <span id="statusBadge" class="badge badge-knight">Knight (♞)</span>
+    <span style="font-size: 13px; color: #a1a1aa; font-weight: normal;">(Klik bidak untuk mengganti pilihan)</span>
+  </div>
 
   <!-- Kontrol Input Baris & Kolom -->
   <div class="controls">
     <div class="form-group">
       <label for="inputRow">Row:</label>
-      <input type="number" id="inputRow" value="8" min="1" max="100" />
+      <input type="number" id="inputRow" value="8" min="2" max="100" />
     </div>
     <div class="form-group">
       <label for="inputCol">Column:</label>
-      <input type="number" id="inputCol" value="8" min="1" max="100" />
+      <input type="number" id="inputCol" value="8" min="2" max="100" />
     </div>
     <button id="btnGenerate">Generate Board</button>
   </div>
@@ -153,57 +222,123 @@
     // State aplikasi
     let totalRows = 8;
     let totalCols = 8;
-    let knightPos = { row: 0, col: 0 }; // Poin 5: Default pojok kiri atas (0, 0)
 
-    // Poin 6: 8 gerakan sah bidak kuda
+    // Posisi masing-masing bidak
+    let knightPos = { row: 0, col: 0 };
+    let kingPos = { row: 0, col: 1 };
+
+    // Bidak yang saat ini dipilih untuk bergerak ('knight' atau 'king')
+    let selectedPiece = 'knight';
+
+    // 8 gerakan sah bidak Kuda (Knight)
     const knightMoves = [
-      { dRow: -1, dCol: 2 },  // a. kanan 2, atas 1
-      { dRow: 1,  dCol: 2 },  // b. kanan 2, bawah 1
-      { dRow: -1, dCol: -2 }, // c. kiri 2, atas 1
-      { dRow: 1,  dCol: -2 }, // d. kiri 2, bawah 1
-      { dRow: -2, dCol: 1 },  // e. kanan 1, atas 2
-      { dRow: 2,  dCol: 1 },  // f. kanan 1, bawah 2
-      { dRow: -2, dCol: -1 }, // g. kiri 1, atas 2
-      { dRow: 2,  dCol: -1 }  // h. kiri 1, bawah 2
+      { dRow: -1, dCol: 2 },  // kanan 2, atas 1
+      { dRow: 1, dCol: 2 },   // kanan 2, bawah 1
+      { dRow: -1, dCol: -2 }, // kiri 2, atas 1
+      { dRow: 1, dCol: -2 },  // kiri 2, bawah 1
+      { dRow: -2, dCol: 1 },  // kanan 1, atas 2
+      { dRow: 2, dCol: 1 },   // kanan 1, bawah 2
+      { dRow: -2, dCol: -1 }, // kiri 1, atas 2
+      { dRow: 2, dCol: -1 }   // kiri 1, bawah 2
+    ];
+
+    // 8 gerakan sah bidak Raja (King) - 1 petak ke segala arah
+    const kingMoves = [
+      { dRow: -1, dCol: 0 },  // Atas
+      { dRow: 1, dCol: 0 },   // Bawah
+      { dRow: 0, dCol: -1 },  // Kiri
+      { dRow: 0, dCol: 1 },   // Kanan
+      { dRow: -1, dCol: -1 }, // Diagonal Kiri Atas
+      { dRow: -1, dCol: 1 },  // Diagonal Kanan Atas
+      { dRow: 1, dCol: -1 },  // Diagonal Kiri Bawah
+      { dRow: 1, dCol: 1 }    // Diagonal Kanan Bawah
     ];
 
     const boardElement = document.getElementById("board");
     const inputRow = document.getElementById("inputRow");
     const inputCol = document.getElementById("inputCol");
     const btnGenerate = document.getElementById("btnGenerate");
+    const statusBadge = document.getElementById("statusBadge");
 
-    // Mengecek apakah suatu kotak merupakan langkah yang sah dari posisi kuda
+    // Perbarui label indikator bidak terpilih
+    function updateStatusIndicator() {
+      if (selectedPiece === 'knight') {
+        statusBadge.textContent = 'Knight (♞)';
+        statusBadge.className = 'badge badge-knight';
+      } else if (selectedPiece === 'king') {
+        statusBadge.textContent = 'King (♚)';
+        statusBadge.className = 'badge badge-king';
+      } else {
+        statusBadge.textContent = 'Belum Ada Bidak';
+        statusBadge.className = 'badge badge-none';
+      }
+    }
+
+    // Mengecek apakah suatu petak merupakan langkah sah untuk bidak yang dipilih
     function isAllowedMove(targetRow, targetCol) {
-      // Poin 9: Posisi kuda itu sendiri bukan langkah yang diperbolehkan
-      if (targetRow === knightPos.row && targetCol === knightPos.col) {
+      if (!selectedPiece) return false;
+
+      const activePos = selectedPiece === 'knight' ? knightPos : kingPos;
+      const otherPos = selectedPiece === 'knight' ? kingPos : knightPos;
+
+      // Tidak bisa melangkah ke posisinya sendiri
+      if (targetRow === activePos.row && targetCol === activePos.col) {
         return false;
       }
 
-      return knightMoves.some(m => {
-        return (knightPos.row + m.dRow === targetRow) && (knightPos.col + m.dCol === targetCol);
+      // Tidak bisa melangkah menimpa bidak lain
+      if (targetRow === otherPos.row && targetCol === otherPos.col) {
+        return false;
+      }
+
+      const moves = selectedPiece === 'knight' ? knightMoves : kingMoves;
+
+      return moves.some(m => {
+        return (activePos.row + m.dRow === targetRow) && (activePos.col + m.dCol === targetCol);
       });
     }
 
-    // Komponen Kotak (Poin 2)
+    // Komponen Kotak
     function createKotakComponent(row, col) {
       const kotak = document.createElement("div");
       kotak.classList.add("kotak");
-      
-      const isWhite = (row + col) % 2 === 0;
-      kotak.classList.add(isWhite ? "white" : "black");
+
+      const isBlack = (row + col) % 2 === 0;
+      kotak.classList.add(isBlack ? "black" : "white");
       kotak.dataset.row = row;
       kotak.dataset.col = col;
 
-      // Poin 4: Render huruf K merah tebal jika kotak ini posisi kuda saat ini
-      if (row === knightPos.row && col === knightPos.col) {
-        const kSpan = document.createElement("span");
-        kSpan.classList.add("kuda-piece");
-        kSpan.textContent = "K";
-        kotak.appendChild(kSpan);
+      const hasKnight = (row === knightPos.row && col === knightPos.col);
+      const hasKing = (row === kingPos.row && col === kingPos.col);
+
+      // Render Bidak Knight
+      if (hasKnight) {
+        const pieceSpan = document.createElement("span");
+        pieceSpan.classList.add("piece", "knight");
+        pieceSpan.textContent = "♞";
+        kotak.appendChild(pieceSpan);
+
+        if (selectedPiece === 'knight') {
+          kotak.classList.add("selected-piece");
+        }
+      }
+      // Render Bidak King
+      else if (hasKing) {
+        const pieceSpan = document.createElement("span");
+        pieceSpan.classList.add("piece", "king");
+        pieceSpan.textContent = "♚";
+        kotak.appendChild(pieceSpan);
+
+        if (selectedPiece === 'king') {
+          kotak.classList.add("selected-piece");
+        }
       }
 
-      // Poin 7, 8, 9: Penanganan Hover Warna
+      // Efek Hover
       kotak.addEventListener("mouseenter", () => {
+        // Jika kursor berada di atas bidak lain, jangan beri warna merah seolah ingin memindahkannya
+        if (hasKnight || hasKing) return;
+
         if (isAllowedMove(row, col)) {
           kotak.classList.add("hover-allowed"); // Hijau
         } else {
@@ -215,20 +350,39 @@
         kotak.classList.remove("hover-allowed", "hover-forbidden");
       });
 
-      // Poin 10 & 11: Penanganan Klik Kotak
+      // Penanganan Klik
       kotak.addEventListener("click", () => {
+        // 1. Jika mengklik kotak berisi Knight -> pilih Knight
+        if (hasKnight) {
+          selectedPiece = 'knight';
+          updateStatusIndicator();
+          renderBoard();
+          return;
+        }
+
+        // 2. Jika mengklik kotak berisi King -> pilih King
+        if (hasKing) {
+          selectedPiece = 'king';
+          updateStatusIndicator();
+          renderBoard();
+          return;
+        }
+
+        // 3. Jika mengklik kotak kosong dan langkah sah -> gerakkan bidak yang terpilih
         if (isAllowedMove(row, col)) {
-          // Poin 11: Pindah kuda ke posisi baru
-          knightPos = { row: row, col: col };
+          if (selectedPiece === 'knight') {
+            knightPos = { row: row, col: col };
+          } else if (selectedPiece === 'king') {
+            kingPos = { row: row, col: col };
+          }
           renderBoard();
         }
-        // Poin 10: Klik di kotak yang tidak diperbolehkan tidak melakukan apa-apa
       });
 
       return kotak;
     }
 
-    // Komponen Board (Poin 2)
+    // Render Papan Catur
     function renderBoard() {
       boardElement.innerHTML = "";
       boardElement.style.gridTemplateColumns = `repeat(${totalCols}, 50px)`;
@@ -242,15 +396,14 @@
       }
     }
 
-    // Poin 12 & 13: Generate Board berdasarkan input user
+    // Generate Board
     function handleGenerate() {
       let r = parseInt(inputRow.value, 10);
       let c = parseInt(inputCol.value, 10);
 
-      // Batasan minimal 1 dan maksimal 100
-      if (isNaN(r) || r < 1) r = 1;
+      if (isNaN(r) || r < 2) r = 2;
       if (r > 100) r = 100;
-      if (isNaN(c) || c < 1) c = 1;
+      if (isNaN(c) || c < 2) c = 2;
       if (c > 100) c = 100;
 
       inputRow.value = r;
@@ -259,15 +412,21 @@
       totalRows = r;
       totalCols = c;
 
-      // Poin 12: Reset posisi kuda ke pojok kiri atas
+      // Kembalikan posisi awal kedua bidak
       knightPos = { row: 0, col: 0 };
+      kingPos = { row: 0, col: 1 };
+      selectedPiece = 'knight';
+
+      updateStatusIndicator();
       renderBoard();
     }
 
     btnGenerate.addEventListener("click", handleGenerate);
 
-    // Inisialisasi awal papan saat halaman dimuat
+    // Inisialisasi awal saat dimuat
+    updateStatusIndicator();
     renderBoard();
   </script>
 </body>
+
 </html>
